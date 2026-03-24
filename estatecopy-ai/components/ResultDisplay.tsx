@@ -26,9 +26,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, onRetry, onRegene
     );
   }
 
-  const activeText = result.texts && result.texts.length > 0 
-    ? result.texts[result.activeTabIndex] 
-    : result.text;
+  const activeText = result.text;
 
   // Safety check: Scan the result text for any forbidden words
   const detectedForbiddenWords = useMemo(() => {
@@ -108,12 +106,22 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, onRetry, onRegene
       {/* バリエーション切り替えタブ */}
       {!isGenerating && result.texts && result.texts.length > 0 && (
         <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
-          {[1, 2, 3].map((num, idx) => (
+          <button
+            onClick={() => onTabChange(0)}
+            className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${
+              result.activeTabIndex === 0 
+                ? 'bg-white text-orange-600 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            キャッチコピー
+          </button>
+          {[1, 2, 3].map((num) => (
             <button
               key={num}
-              onClick={() => onTabChange(idx)}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
-                result.activeTabIndex === idx 
+              onClick={() => onTabChange(num)}
+              className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${
+                result.activeTabIndex === num 
                   ? 'bg-white text-orange-600 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-700'
               }`}
