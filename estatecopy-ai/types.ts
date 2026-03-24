@@ -27,6 +27,7 @@ export interface FormData {
 export interface GenerationResult {
   text: string; // Legacy support or combined text
   texts: string[]; // 3 versions
+  catchphrase?: string;
   activeTabIndex: number;
   characterCount: number;
   groundingUrls: string[];
