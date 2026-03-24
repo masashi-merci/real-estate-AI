@@ -150,10 +150,11 @@ const App: React.FC = () => {
       await new Promise(r => setTimeout(r, 800)); // 視覚的なフィードバックのための短い待機
 
       setResult({
-        text: response.fullText,
+        text: response.catchphrase || response.fullText,
         texts: response.texts,
+        catchphrase: response.catchphrase,
         activeTabIndex: 0,
-        characterCount: response.fullText.replace(/\s/g, '').length,
+        characterCount: (response.catchphrase || response.fullText).replace(/\s/g, '').length,
         groundingUrls: response.groundingUrls,
         facilities: response.facilities,
         address: formData.address
@@ -169,7 +170,9 @@ const App: React.FC = () => {
           agent_name: agentName,
           property_name: formData.propertyName,
           address: formData.address,
-          result_text: response.fullText,
+          result_text: response.texts.length > 0 
+            ? `${response.fullText}\n\n${response.texts.map((t, i) => `【パターン${i + 1}】\n${t}`).join('\n\n')}` 
+            : response.fullText,
           grounding_urls: response.groundingUrls,
           search_used: useSearch,
           pdf_url: pdfUrl,
@@ -222,12 +225,37 @@ const App: React.FC = () => {
 
       setResult(prev => prev ? {
         ...prev,
-        text: response.fullText,
+        text: response.catchphrase || response.fullText,
         texts: response.texts,
+        catchphrase: response.catchphrase,
         activeTabIndex: 0,
-        characterCount: response.fullText.replace(/\s/g, '').length,
+        characterCount: (response.catchphrase || response.fullText).replace(/\s/g, '').length,
         groundingUrls: response.groundingUrls,
       } : null);
+
+      if (currentUser) {
+        const selectedAgent = agents.find(a => a.id === formData.selectedAgentId);
+        const agentName = selectedAgent ? selectedAgent.name : currentUser.name;
+
+        await addLog({
+          client_id: currentUser.clientId || currentUser.id,
+          agent_id: formData.selectedAgentId || currentUser.id,
+          agent_name: agentName,
+          property_name: formData.propertyName,
+          address: formData.address,
+          result_text: response.texts.length > 0 
+            ? `${response.fullText}\n\n${response.texts.map((t, i) => `【パターン${i + 1}】\n${t}`).join('\n\n')}` 
+            : response.fullText,
+          grounding_urls: response.groundingUrls,
+          search_used: useSearch,
+          pdf_url: '', // 再生成時はPDF/間取り図URLは引き継がないか、必要なら追加
+          floor_plan_url: ''
+        });
+        if (currentUser.clientId) {
+          const updatedLogs = await getLogsByClient(currentUser.clientId);
+          setHistory(updatedLogs);
+        }
+      }
     } catch (error) {
       console.error(error);
       alert('再生成中にエラーが発生しました。');
@@ -238,12 +266,22 @@ const App: React.FC = () => {
   };
 
   const handleTabChange = (index: number) => {
-    setResult(prev => prev ? {
-      ...prev,
-      activeTabIndex: index,
-      text: prev.texts[index] || prev.text,
-      characterCount: (prev.texts[index] || prev.text).replace(/\s/g, '').length
-    } : null);
+    setResult(prev => {
+      if (!prev) return null;
+      let newText = prev.text;
+      if (index === 0) {
+        newText = prev.catchphrase || prev.text;
+      } else if (prev.texts && prev.texts[index - 1]) {
+        newText = prev.texts[index - 1];
+      }
+      
+      return {
+        ...prev,
+        activeTabIndex: index,
+        text: newText,
+        characterCount: newText.replace(/\s/g, '').length
+      };
+    });
   };
 
   if (!currentUser) {
