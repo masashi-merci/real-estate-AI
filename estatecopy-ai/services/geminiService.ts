@@ -90,7 +90,7 @@ export const generatePropertyDescriptionStream = async (
   floorPlanImage?: File | null,
   propertyType?: 'mansion' | 'house' | 'other',
   existingFacilities?: any[]
-): Promise<{ fullText: string; texts: string[]; groundingUrls: string[]; facilities: any[] }> => {
+): Promise<{ fullText: string; texts: string[]; groundingUrls: string[]; facilities: any[]; catchphrase?: string }> => {
   
   const apiKey = getApiKey();
   
@@ -255,6 +255,7 @@ ${nearbyFacilities.length > 0
     return { 
       fullText: finalDisplayText, 
       texts: texts.length > 0 ? texts : [finalDisplayText],
+      catchphrase: finalDisplayText,
       groundingUrls: [...new Set(groundingUrls)],
       facilities
     };
@@ -262,6 +263,12 @@ ${nearbyFacilities.length > 0
   } catch (error: any) {
     console.error("Gemini Error:", error);
     const demoText = await simulateStream(onChunk);
-    return { fullText: demoText, texts: [demoText, demoText, demoText], groundingUrls: [], facilities: [] };
+    return { 
+      fullText: demoText, 
+      texts: [demoText, demoText, demoText], 
+      catchphrase: demoText.split('[VERSION_1]')[0].trim(),
+      groundingUrls: [], 
+      facilities: [] 
+    };
   }
 };
